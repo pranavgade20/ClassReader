@@ -2,11 +2,14 @@ import java.io.*;
 
 public class Klass {
     public short major_version, minor_version;
-    public short constant_pool_count, interfaces_count;
+    public short constant_pool_count, interfaces_count, fields_count, methods_count, attributes_count;
     public ConstantField constantPool[];
     public AccessFlags access_flags;
     public ConstantClass this_class, super_class;
     public ConstantClass interfaces[];
+    public FieldInfo fields[];
+    public MethodInfo methods[];
+    public AttributeInfo attributes[];
 
     Klass(Class c) throws AssertionError, IOException {
         DataInput classStream = new DataInputStream(c.getResourceAsStream(c.getSimpleName()+".class"));
@@ -26,8 +29,12 @@ public class Klass {
         }
 
         access_flags = AccessFlags.fromFlags(classStream.readShort());
-        this_class = (ConstantClass) constantPool[classStream.readShort()];
-        super_class = (ConstantClass) constantPool[classStream.readShort()];
+        try {
+            this_class = (ConstantClass) constantPool[classStream.readShort()];
+            super_class = (ConstantClass) constantPool[classStream.readShort()];
+        } catch (Exception e) {
+            throw new AssertionError("value points to incorrect entry in constant pool");
+        }
 
         interfaces_count = classStream.readShort();
         interfaces = new ConstantClass[interfaces_count];
@@ -38,6 +45,32 @@ public class Klass {
                 throw new AssertionError("entry in interfaces array is invalid.");
             }
         }
+
+        fields_count = classStream.readShort();
+        fields = new FieldInfo[fields_count];
+        for (int i = 0; i < fields_count; i++) {
+            fields[i] = new FieldInfo(classStream, this);
+        }
+
+        methods_count = classStream.readShort();
+        methods = new MethodInfo[methods_count];
+        for (int i = 0; i < methods_count; i++) {
+            methods[i] = new MethodInfo(classStream, this);
+        }
+
+        attributes_count = classStream.readShort();
+        attributes = new AttributeInfo[attributes_count];
+        for (int i = 0; i < attributes_count; i++) {
+            attributes[i] = new AttributeInfo(classStream, this);
+        }
+
+        try {
+            classStream.readByte();
+        } catch (EOFException e) {
+            return;
+        }
+
+        throw new AssertionError("Class file is longer than expected");
     }
 
 //    public InputStream getKlass() {

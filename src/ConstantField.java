@@ -228,6 +228,11 @@ class ConstantUtf8 extends ConstantField {
     public String getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return value;
+    }
 }
 class ConstantMethodHandle extends ConstantField {
     //represents CONSTANT_MethodHandle_info
