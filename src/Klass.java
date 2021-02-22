@@ -21,7 +21,6 @@ public class Klass {
 
         constant_pool_count = classStream.readShort();
         constantPool = new ConstantField[constant_pool_count];
-        System.out.println(constant_pool_count);
         for (int i = 1; i < constant_pool_count; i++) { // i is 1 since constant_pool[0] is not used by compiler
             constantPool[i] = ConstantField.getConstantField(classStream, this);
             // 8-byte constants take up 2 spots in the constant_pool

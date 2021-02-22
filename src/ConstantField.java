@@ -59,6 +59,11 @@ class ConstantClass extends ConstantField {
     String getName() {
         return ((ConstantUtf8)klass.constantPool[name_index]).value;
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }
 class ConstantFieldref extends ConstantField {
     //represents CONSTANT_Fieldref_info
@@ -132,6 +137,11 @@ class ConstantInteger extends ConstantField {
     int getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "value=" + value;
+    }
 }
 class ConstantFloat extends ConstantField {
     //represents CONSTANT_Float_info
@@ -148,6 +158,11 @@ class ConstantFloat extends ConstantField {
 
     float getValue() {
         return value;
+    }
+
+    @Override
+    public String toString() {
+        return "value=" + value;
     }
 }
 class ConstantLong extends ConstantField {
@@ -166,6 +181,11 @@ class ConstantLong extends ConstantField {
     long getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "value=" + value;
+    }
 }
 class ConstantDouble extends ConstantField {
     //represents CONSTANT_Double_info
@@ -182,6 +202,11 @@ class ConstantDouble extends ConstantField {
 
     double getValue() {
         return value;
+    }
+
+    @Override
+    public String toString() {
+        return "value=" + value;
     }
 }
 class ConstantNameAndType extends ConstantField {
@@ -206,6 +231,11 @@ class ConstantNameAndType extends ConstantField {
     }
     String getDescriptor() {
         return ((ConstantUtf8)klass.constantPool[descriptor_index]).value;
+    }
+
+    @Override
+    public String toString() {
+        return getName() + " " + getDescriptor();
     }
 }
 class ConstantUtf8 extends ConstantField {

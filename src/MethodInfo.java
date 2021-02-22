@@ -21,7 +21,6 @@ public class MethodInfo {
 
     @Override
     public String toString() {
-        return "name=" + name +
-                ", descriptor=" + descriptor;
+        return name + " " + descriptor;
     }
 }

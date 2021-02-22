@@ -18,7 +18,7 @@ public class AccessFlags {
      * @return is it public
      */
     public boolean isPublic() {
-        return (flags&0x0001) == 0;
+        return (flags&0x0001) > 0;
     }
 
     public void setIsPublic(boolean isPublic) {
@@ -31,7 +31,7 @@ public class AccessFlags {
      * @return is it private
      */
     public boolean isPrivate() {
-        return (flags&0x0002) == 0;
+        return (flags&0x0002) > 0;
     }
 
     public void setIsPrivate(boolean isPrivate) {
@@ -44,7 +44,7 @@ public class AccessFlags {
      * @return is it protected
      */
     public boolean isProtected() {
-        return (flags&0x0004) == 0;
+        return (flags&0x0004) > 0;
     }
 
     public void setIsProtected(boolean isProtected) {
@@ -57,7 +57,7 @@ public class AccessFlags {
      * @return is it static
      */
     public boolean isStatic() {
-        return (flags&0x0008) == 0;
+        return (flags&0x0008) > 0;
     }
 
     public void setIsStatic(boolean isStatic) {
@@ -70,7 +70,7 @@ public class AccessFlags {
      * @return is the class final
      */
     public boolean isFinal() {
-        return (flags&0x0010) != 0;
+        return (flags&0x0010) > 0;
     }
 
     public void setIsFinal(boolean isFinal) {
@@ -83,7 +83,7 @@ public class AccessFlags {
      * @return is this volatile
      */
     public boolean isVolatile() {
-        return (flags&0x0040) != 0;
+        return (flags&0x0040) > 0;
     }
 
     public void setIsVolatile(boolean isVolatile) {
@@ -96,7 +96,7 @@ public class AccessFlags {
      * @return is this volatile
      */
     public boolean isTransient() {
-        return (flags&0x0080) != 0;
+        return (flags&0x0080) > 0;
     }
 
     public void setIsTransient(boolean isTransient) {
@@ -109,7 +109,7 @@ public class AccessFlags {
      * @return are the superclass methods treated specially
      */
     public boolean isSuper() {
-        return (flags&0x0040) != 0;
+        return (flags&0x0040) > 0;
     }
 
     public void setIsSuper(boolean isSuper) {
@@ -122,7 +122,7 @@ public class AccessFlags {
      * @return is this an interface
      */
     public boolean isInterface() {
-        return (flags&0x0200) != 0;
+        return (flags&0x0200) > 0;
     }
 
     public void setIsInterface(boolean isInterface) {
@@ -135,7 +135,7 @@ public class AccessFlags {
      * @return is this declared to be abstract
      */
     public boolean isAbstract() {
-        return (flags&0x0400) != 0;
+        return (flags&0x0400) > 0;
     }
 
     public void setIsAbstract(boolean isAbstract) {
@@ -148,7 +148,7 @@ public class AccessFlags {
      * @return is this declared to be synthetic
      */
     public boolean isSynthetic() {
-        return (flags&0x1000) != 0;
+        return (flags&0x1000) > 0;
     }
 
     public void setIsSynthetic(boolean isSynthetic) {
@@ -161,7 +161,7 @@ public class AccessFlags {
      * @return is this declared as an annotation
      */
     public boolean isAnnotation() {
-        return (flags&0x2000) != 0;
+        return (flags&0x2000) > 0;
     }
 
     public void setIsAnnotation(boolean isAnnotation) {
@@ -174,11 +174,34 @@ public class AccessFlags {
      * @return is this declared as an enum
      */
     public boolean isEnum() {
-        return (flags&0x4000) != 0;
+        return (flags&0x4000) > 0;
     }
 
     public void setIsEnum(boolean isEnum) {
         if (isEnum) flags |= 0x4000;
         else flags &= ~0x4000;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder ret = new StringBuilder();
+        if(isPublic()) ret.append("Public,");
+        if(isPrivate()) ret.append("Private,");
+        if(isProtected()) ret.append("Protected,");
+        if(isStatic()) ret.append("Static,");
+        if(isFinal()) ret.append("Final,");
+        if(isVolatile()) ret.append("Volatile,");
+        if(isTransient()) ret.append("Transient,");
+        if(isSuper()) ret.append("Super,");
+        if(isInterface()) ret.append("Interface,");
+        if(isAbstract()) ret.append("Abstract,");
+        if(isSynthetic()) ret.append("Synthetic,");
+        if(isAnnotation()) ret.append("Annotation,");
+        if(isEnum()) ret.append("Enum,");
+
+        if (ret.length() == 0) {
+            ret.append("no flags set ");
+        }
+        return ret.replace(ret.length()-1, ret.length(), "").toString();
     }
 }

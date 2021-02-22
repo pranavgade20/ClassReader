@@ -21,7 +21,6 @@ public class FieldInfo {
 
     @Override
     public String toString() {
-        return "name=" + name +
-                ", descriptor=" + descriptor;
+        return descriptor + " " + name;
     }
 }
