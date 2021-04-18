@@ -15,7 +15,7 @@ public class MethodInfo {
 
         attributes = new AttributeInfo[attributes_count];
         for (int i = 0; i < attributes_count; i++) {
-            attributes[i] = new AttributeInfo(classStream, klass);
+            attributes[i] = AttributeInfo.getAttributeInfo(classStream, klass);
         }
     }
 

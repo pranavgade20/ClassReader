@@ -8,10 +8,13 @@ public class Main {
 }
 
 class TestClass {
-    short x = 69;
+    int x = 69;
     long yx = 0xCAFEBABECAFEBABEL;
 
     public int getX() {
         return x;
+    }
+    public int get2X() {
+        return x*2;
     }
 }

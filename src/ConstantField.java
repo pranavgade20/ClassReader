@@ -8,8 +8,8 @@ public class ConstantField {
 
     public static ConstantField getConstantField(DataInput classStream, Klass klass) throws AssertionError, IOException {
         switch (ConstantType.getConstant(classStream.readByte())) {
-            case CONSTANT_Class:
-                return new ConstantClass(classStream, klass);
+            case CONSTANT_Class_info:
+                return new ConstantClassInfo(classStream, klass);
             case CONSTANT_Fieldref:
                 return new ConstantFieldref(classStream, klass);
             case CONSTANT_Methodref:
@@ -42,18 +42,17 @@ public class ConstantField {
     }
 
 }
-class ConstantClass extends ConstantField {
-    //represents CONSTANT_Class
+class ConstantClassInfo extends ConstantField {
+    //represents CONSTANT_Class_info
     public short name_index; // TODO this points to an entry in the constants pool
-    ConstantClass(DataInput classStream, Klass klass) throws IOException {
+    ConstantClassInfo(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
-        type = ConstantType.CONSTANT_Class;
+        type = ConstantType.CONSTANT_Class_info;
         name_index = classStream.readShort();
     }
 
-    void validate() {
-        if (klass.constantPool[name_index].type != ConstantType.CONSTANT_Utf8)
-            throw new AssertionError("entry in constant pool is invalid.");
+    boolean validate() {
+        return klass.constantPool[name_index].type == ConstantType.CONSTANT_Utf8;
     }
 
     String getName() {
@@ -75,12 +74,9 @@ class ConstantFieldref extends ConstantField {
         name_and_type_index = classStream.readShort();
     }
 
-    void validate() {
-        if (klass.constantPool[name_and_type_index].type != ConstantType.CONSTANT_NameAndType)
-            throw new AssertionError("entry in constant pool is invalid.");
+    boolean validate() {
         //TODO validate class index
-        if (klass.constantPool[class_index].type != ConstantType.CONSTANT_Class)
-            throw new AssertionError("entry in constant pool is invalid.");
+        return klass.constantPool[name_and_type_index].type == ConstantType.CONSTANT_NameAndType && klass.constantPool[class_index].type == ConstantType.CONSTANT_Class_info;
     }
 }
 class ConstantMethodref extends ConstantField {
@@ -112,9 +108,8 @@ class ConstantString extends ConstantField {
         string_index = classStream.readShort();
     }
 
-    void validate() {
-        if (klass.constantPool[string_index].type != ConstantType.CONSTANT_Utf8)
-            throw new AssertionError("entry in constant pool is invalid.");
+    boolean validate() {
+        return klass.constantPool[string_index].type == ConstantType.CONSTANT_Utf8;
     }
 
     String getValue() {
@@ -302,7 +297,7 @@ enum ConstantType {
     CONSTANT_Float(4),
     CONSTANT_Long(5),
     CONSTANT_Double(6),
-    CONSTANT_Class(7),
+    CONSTANT_Class_info(7),
     CONSTANT_String(8),
     CONSTANT_Fieldref(9),
     CONSTANT_Methodref(10),
@@ -323,7 +318,7 @@ enum ConstantType {
             case 4: return CONSTANT_Float;
             case 5: return CONSTANT_Long;
             case 6: return CONSTANT_Double;
-            case 7: return CONSTANT_Class;
+            case 7: return CONSTANT_Class_info;
             case 8: return CONSTANT_String;
             case 9: return CONSTANT_Fieldref;
             case 10: return CONSTANT_Methodref;

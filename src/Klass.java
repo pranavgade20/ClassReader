@@ -5,8 +5,8 @@ public class Klass {
     public short constant_pool_count, interfaces_count, fields_count, methods_count, attributes_count;
     public ConstantField constantPool[];
     public AccessFlags access_flags;
-    public ConstantClass this_class, super_class;
-    public ConstantClass interfaces[];
+    public ConstantClassInfo this_class, super_class;
+    public ConstantClassInfo interfaces[];
     public FieldInfo fields[];
     public MethodInfo methods[];
     public AttributeInfo attributes[];
@@ -29,17 +29,17 @@ public class Klass {
 
         access_flags = AccessFlags.fromFlags(classStream.readShort());
         try {
-            this_class = (ConstantClass) constantPool[classStream.readShort()];
-            super_class = (ConstantClass) constantPool[classStream.readShort()];
+            this_class = (ConstantClassInfo) constantPool[classStream.readShort()];
+            super_class = (ConstantClassInfo) constantPool[classStream.readShort()];
         } catch (Exception e) {
             throw new AssertionError("value points to incorrect entry in constant pool");
         }
 
         interfaces_count = classStream.readShort();
-        interfaces = new ConstantClass[interfaces_count];
+        interfaces = new ConstantClassInfo[interfaces_count];
         for (int i = 0; i < interfaces_count; i++) {
             try {
-                interfaces[i] = (ConstantClass) constantPool[classStream.readShort()];
+                interfaces[i] = (ConstantClassInfo) constantPool[classStream.readShort()];
             } catch (Exception e) {
                 throw new AssertionError("entry in interfaces array is invalid.");
             }
@@ -60,7 +60,7 @@ public class Klass {
         attributes_count = classStream.readShort();
         attributes = new AttributeInfo[attributes_count];
         for (int i = 0; i < attributes_count; i++) {
-            attributes[i] = new AttributeInfo(classStream, this);
+            attributes[i] = AttributeInfo.getAttributeInfo(classStream, this);
         }
 
         try {
