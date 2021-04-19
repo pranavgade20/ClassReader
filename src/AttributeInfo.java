@@ -81,7 +81,7 @@ class CodeAttribute extends AttributeInfo {
     // represents Code_attribute
     short max_stack, max_locals, exception_table_length, attributes_count;
     int code_length;
-    byte[] code;
+    JavaBytecode code;
     ExceptionTableEntry[] exception_table;
     AttributeInfo[] attributes;
     CodeAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
@@ -89,8 +89,9 @@ class CodeAttribute extends AttributeInfo {
         max_stack = classStream.readShort();
         max_locals = classStream.readShort();
         code_length = classStream.readInt();
-        code = new byte[code_length];
-        classStream.readFully(code);
+        byte[] bytecode = new byte[code_length];
+        classStream.readFully(bytecode);
+        code = new JavaBytecode(bytecode);
 
         exception_table_length = classStream.readShort();
         exception_table = new ExceptionTableEntry[exception_table_length];
@@ -173,7 +174,7 @@ class EnclosingMethodAttribute extends AttributeInfo {
 }
 class SyntheticAttribute extends AttributeInfo {
     // represents Synthetic_attribute
-    SyntheticAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
+    SyntheticAttribute(AttributeInfo parent, DataInput classStream, Klass klass) {
         super(parent);
     }
 }
@@ -287,7 +288,7 @@ class LocalVariableTypeTableAttribute extends AttributeInfo {
 }
 class DeprecatedAttribute extends AttributeInfo {
     // represents Deprecated_attribute
-    DeprecatedAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
+    DeprecatedAttribute(AttributeInfo parent, DataInput classStream, Klass klass) {
         super(parent);
     }
     }

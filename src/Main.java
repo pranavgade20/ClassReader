@@ -15,6 +15,6 @@ class TestClass {
         return x;
     }
     public int get2X() {
-        return x*2;
+        return x*10;
     }
 }
