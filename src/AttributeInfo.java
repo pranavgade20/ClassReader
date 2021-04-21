@@ -203,7 +203,7 @@ class CodeAttribute extends AttributeInfo {
         output.writeShort(max_stack);
         output.writeShort(max_locals);
         output.writeInt(code_length);
-        output.write(outStream.toByteArray());
+        outStream.writeTo((OutputStream) output);
     }
 }
 
@@ -971,6 +971,6 @@ class BootstrapMethodsAttribute extends AttributeInfo {
 
         output.writeInt(outStream.size() + 2);
         output.writeShort(bootstrap_methods.length);
-        output.write(outStream.toByteArray());
+        outStream.writeTo((OutputStream) output);
     }
 }

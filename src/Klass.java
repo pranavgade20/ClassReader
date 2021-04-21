@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.Arrays;
+import java.util.List;
 
 public class Klass {
     public short major_version, minor_version;
@@ -27,8 +29,9 @@ public class Klass {
             if (constantPool[i].type == ConstantType.CONSTANT_Double || constantPool[i].type == ConstantType.CONSTANT_Long) i++;
         }
 
-        for (int i = 1; i < constant_pool_count; i++) {
-            constantPool[i].resolve(this_class.klass);
+        for (int i = 0; i < constant_pool_count; i++) {
+            if (constantPool[i] == null) continue;
+            constantPool[i].resolve(this);
         }
 
         access_flags = AccessFlags.fromFlags(classStream.readShort());
@@ -76,23 +79,73 @@ public class Klass {
         throw new AssertionError("Class file is longer than expected");
     }
 
-//    public InputStream getKlass() {
-//        return new InputStream() {
-//            int pos;
-//            @Override
-//            public int read() throws IOException {
-//                int ret = -1;
-//                if (pos < 4)
-//                    ret = new byte[]{(byte) 0xca, (byte) 0xfe, (byte) 0xba, (byte) 0xbe}[pos];
-//                else if (pos == 5) ret = (minor_version & 0xFF00)>>8;
-//                else if (pos == 6) ret = (minor_version & 0xFF);
-//                else if (pos == 7) ret = (major_version & 0xFF00)>>8;
-//                else if (pos == 8) ret = (major_version & 0xFF);
-//                else pos--;
-//
-//                pos++;
-//                return ret;
-//            }
-//        };
-//    }
+    public void write(DataOutput output) throws IOException {
+        output.writeInt(0xCAFEBABE);
+
+        output.writeShort(minor_version);
+        output.writeShort(major_version);
+
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream(); // for constant pool
+        DataOutput data = new DataOutputStream(outStream);
+
+        List<ConstantField> constant_pool = Arrays.asList(constantPool);
+
+        data.writeShort(access_flags.getFlags());
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.this_class.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.this_class);
+            idx = constant_pool.size();
+        }
+        data.writeShort(idx+1);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.super_class.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.super_class);
+            idx = constant_pool.size();
+        }
+        data.writeShort(idx+1);
+
+        data.writeShort(interfaces.length);
+        for (ConstantClassInfo interfaceInfo : interfaces) {
+            interfaceInfo.write(data, constant_pool);
+        }
+
+        data.writeShort(fields.length);
+        for (FieldInfo field : fields) {
+            field.write(data, constant_pool);
+        }
+
+        data.writeShort(methods.length);
+        for (MethodInfo method : methods) {
+            method.write(output, constant_pool);
+        }
+
+        data.writeShort(attributes.length);
+        for (AttributeInfo attribute : attributes) {
+            attribute.write(data, constant_pool);
+        }
+
+        int ctr = 1;
+        output.writeShort(constant_pool.size() + 1);
+        for (ConstantField constantField : constant_pool) {
+            if (constantField == null) continue;
+            ctr ++;
+            constantField.write(output, constant_pool);
+        }
+
+        outStream.writeTo((OutputStream) output);
+    }
 }
