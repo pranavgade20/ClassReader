@@ -27,6 +27,10 @@ public class Klass {
             if (constantPool[i].type == ConstantType.CONSTANT_Double || constantPool[i].type == ConstantType.CONSTANT_Long) i++;
         }
 
+        for (int i = 1; i < constant_pool_count; i++) {
+            constantPool[i].resolve(this_class.klass);
+        }
+
         access_flags = AccessFlags.fromFlags(classStream.readShort());
         try {
             this_class = (ConstantClassInfo) constantPool[classStream.readShort()];

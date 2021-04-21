@@ -1,6 +1,9 @@
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
 
 public class ConstantField {
     ConstantType type; // the tag denoting type of this field
@@ -37,22 +40,31 @@ public class ConstantField {
             case CONSTANT_InvokeDynamic:
                 return new ConstantInvokeDynamic(classStream, klass);
             default:
-                throw new AssertionError("Class file is invalid");
+                throw new AssertionError("Invalid constant type");
         }
     }
 
+    void resolve(Klass klass) {
+    }
+
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        output.writeByte(type.value);
+    }
 }
 class ConstantClassInfo extends ConstantField {
     //represents CONSTANT_Class_info
-    public short name_index; // TODO this points to an entry in the constants pool
+    private short name_index;
+    public ConstantUtf8 name;
     ConstantClassInfo(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_Class_info;
         name_index = classStream.readShort();
     }
 
-    boolean validate() {
-        return klass.constantPool[name_index].type == ConstantType.CONSTANT_Utf8;
+    @Override
+    void resolve(Klass klass) {
+        name = (ConstantUtf8) klass.constantPool[name_index];
+        name_index = -1; // mark as invalid
     }
 
     String getName() {
@@ -63,10 +75,18 @@ class ConstantClassInfo extends ConstantField {
     public String toString() {
         return getName();
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+        output.writeShort(name_index);
+    }
 }
 class ConstantFieldref extends ConstantField {
     //represents CONSTANT_Fieldref_info
-    public short class_index, name_and_type_index;
+    private short class_index, name_and_type_index;
+    public ConstantClassInfo classs;
+    public ConstantNameAndType name_and_type;
     ConstantFieldref(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_Fieldref;
@@ -74,46 +94,72 @@ class ConstantFieldref extends ConstantField {
         name_and_type_index = classStream.readShort();
     }
 
-    boolean validate() {
-        //TODO validate class index
-        return klass.constantPool[name_and_type_index].type == ConstantType.CONSTANT_NameAndType && klass.constantPool[class_index].type == ConstantType.CONSTANT_Class_info;
+    @Override
+    void resolve(Klass klass) {
+        classs = (ConstantClassInfo) klass.constantPool[class_index];
+        name_and_type = (ConstantNameAndType) klass.constantPool[name_and_type_index];
+        class_index = -1; // mark invalid
+        name_and_type_index = -1; // mark invalid
     }
 }
 class ConstantMethodref extends ConstantField {
     //represents CONSTANT_Methodref_info
-    public short class_index, name_and_type_index;
+    private short class_index, name_and_type_index;
+    public ConstantClassInfo classs;
+    public ConstantNameAndType name_and_type;
     ConstantMethodref(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_Methodref;
         class_index = classStream.readShort();
         name_and_type_index = classStream.readShort();
     }
+
+    @Override
+    void resolve(Klass klass) {
+        classs = (ConstantClassInfo) klass.constantPool[class_index];
+        name_and_type = (ConstantNameAndType) klass.constantPool[name_and_type_index];
+        class_index = -1; // mark invalid
+        name_and_type_index = -1; // mark invalid
+    }
 }
 class ConstantInterfaceMethodref extends ConstantField {
     //represents CONSTANT_InterfaceMethodref_info
-    public short class_index, name_and_type_index;
+    private short class_index, name_and_type_index;
+    public ConstantClassInfo classs;
+    public ConstantNameAndType name_and_type;
     ConstantInterfaceMethodref(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_InterfaceMethodref;
         class_index = classStream.readShort();
         name_and_type_index = classStream.readShort();
     }
+
+    @Override
+    void resolve(Klass klass) {
+        classs = (ConstantClassInfo) klass.constantPool[class_index];
+        name_and_type = (ConstantNameAndType) klass.constantPool[name_and_type_index];
+        class_index = -1; // mark invalid
+        name_and_type_index = -1; // mark invalid
+    }
 }
 class ConstantString extends ConstantField {
     //represents CONSTANT_String_info
-    public short string_index;
+    private short string_index;
+    public ConstantUtf8 string;
     ConstantString(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_String;
         string_index = classStream.readShort();
     }
 
-    boolean validate() {
-        return klass.constantPool[string_index].type == ConstantType.CONSTANT_Utf8;
+    @Override
+    void resolve(Klass klass) {
+        string = (ConstantUtf8) klass.constantPool[string_index];
+        string_index = -1;
     }
 
     String getValue() {
-        return ((ConstantUtf8)klass.constantPool[string_index]).value;
+        return string.value;
     }
 }
 class ConstantInteger extends ConstantField {
@@ -123,10 +169,6 @@ class ConstantInteger extends ConstantField {
         this.klass = klass;
         type = ConstantType.CONSTANT_Integer;
         value = classStream.readInt();
-    }
-
-    boolean validate() {
-        return true;
     }
 
     int getValue() {
@@ -206,7 +248,8 @@ class ConstantDouble extends ConstantField {
 }
 class ConstantNameAndType extends ConstantField {
     //represents CONSTANT_NameAndType_info
-    public short name_index, descriptor_index;
+    private short name_index, descriptor_index;
+    public ConstantUtf8 name, descriptor;
     ConstantNameAndType(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_NameAndType;
@@ -214,11 +257,12 @@ class ConstantNameAndType extends ConstantField {
         descriptor_index = classStream.readShort();
     }
 
-    void validate() {
-        if (klass.constantPool[name_index].type != ConstantType.CONSTANT_Utf8)
-            throw new AssertionError("entry in constant pool is invalid.");
-        if (klass.constantPool[descriptor_index].type != ConstantType.CONSTANT_Utf8)
-            throw new AssertionError("entry in constant pool is invalid.");
+    @Override
+    void resolve(Klass klass) {
+        name = (ConstantUtf8) klass.constantPool[name_index];
+        descriptor = (ConstantUtf8) klass.constantPool[descriptor_index];
+        name_index = -1; // mark invalid
+        descriptor_index = -1; // mark invalid
     }
 
     String getName() {
@@ -246,10 +290,6 @@ class ConstantUtf8 extends ConstantField {
         value = new String(bytes, StandardCharsets.UTF_8);
     }
 
-    void validate() {
-        if (value == null) throw new AssertionError("string constant is null");
-    }
-
     public String getValue() {
         return value;
     }
@@ -258,35 +298,87 @@ class ConstantUtf8 extends ConstantField {
     public String toString() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConstantUtf8 that = (ConstantUtf8) o;
+        return Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
 }
 class ConstantMethodHandle extends ConstantField {
     //represents CONSTANT_MethodHandle_info
-    public byte reference_kind;
-    public short reference_index;
+    private short reference_index;
+    public ReferenceKind reference_kind;
+    public ConstantField reference;
     ConstantMethodHandle(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_MethodHandle;
-        reference_kind = classStream.readByte();
+        reference_kind = ReferenceKind.values()[classStream.readByte()-1];
         reference_index = classStream.readShort();
+    }
+
+    @Override
+    void resolve(Klass klass) {
+        reference = klass.constantPool[reference_index];
+        reference_index = -1; // mark invalid
+    }
+
+    enum ReferenceKind {
+        REF_getField((byte)1),
+        REF_getStatic((byte)2),
+        REF_putField((byte)3),
+        REF_putStatic((byte)4),
+        REF_invokeVirtual((byte)5),
+        REF_invokeStatic((byte)6),
+        REF_invokeSpecial((byte)7),
+        REF_newInvokeSpecial((byte)8),
+        REF_invokeInterface((byte)9);
+
+        byte value;
+        ReferenceKind(byte value) {
+            this.value = value;
+        }
     }
 }
 class ConstantMethodType extends ConstantField {
     //represents CONSTANT_MethodType_info
-    public short descriptor_index;
+    private short descriptor_index;
+    public ConstantUtf8 descriptor;
     ConstantMethodType(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_MethodType;
         descriptor_index = classStream.readShort();
     }
+
+    @Override
+    void resolve(Klass klass) {
+        descriptor = (ConstantUtf8) klass.constantPool[descriptor_index];
+        descriptor_index = -1; // mark invalid
+    }
 }
 class ConstantInvokeDynamic extends ConstantField {
     //represents CONSTANT_InvokeDynamic_info
-    public short bootstrap_method_attr_index, name_and_type_index; // TODO bootstrap_method_attr_index is reference into bootstrap methods table
+    public short bootstrap_method_attr_index; // TODO bootstrap_method_attr_index is reference into bootstrap methods table
+    private short name_and_type_index;
+    public ConstantNameAndType name_and_type;
     ConstantInvokeDynamic(DataInput classStream, Klass klass) throws IOException {
         this.klass = klass;
         type = ConstantType.CONSTANT_InvokeDynamic;
         bootstrap_method_attr_index = classStream.readShort();
         name_and_type_index = classStream.readShort();
+    }
+
+    @Override
+    void resolve(Klass klass) {
+        name_and_type = (ConstantNameAndType) klass.constantPool[name_and_type_index];
+        name_and_type_index = -1; // mark invalid
     }
 }
 
