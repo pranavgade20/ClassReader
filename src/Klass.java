@@ -138,11 +138,9 @@ public class Klass {
             attribute.write(data, constant_pool);
         }
 
-        int ctr = 1;
         output.writeShort(constant_pool.size() + 1);
         for (ConstantField constantField : constant_pool) {
             if (constantField == null) continue;
-            ctr ++;
             constantField.write(output, constant_pool);
         }
 
