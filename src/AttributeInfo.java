@@ -1,10 +1,11 @@
-import java.io.DataInput;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.List;
 
 public class AttributeInfo {
     public ConstantUtf8 attribute_name;
     public int attribute_length;
-    public byte[] info;
+    public byte[] info = new byte[0];
     AttributeInfo(DataInput classStream, Klass klass) throws IOException {
         attribute_name = (ConstantUtf8) klass.constantPool[classStream.readShort()];
         attribute_length = classStream.readInt();
@@ -53,6 +54,23 @@ public class AttributeInfo {
     public String toString() {
         return "name=" + attribute_name;
     }
+
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(info.length);
+        output.write(info);
+    }
 }
 
 class ConstantValueAttribute extends AttributeInfo {
@@ -61,6 +79,8 @@ class ConstantValueAttribute extends AttributeInfo {
     ConstantValueAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
         value = klass.constantPool[classStream.readShort()];
+
+        if(!validate()) throw new ClassCastException("Index into constant pool is incorrect");
     }
 
     boolean validate() {
@@ -75,6 +95,36 @@ class ConstantValueAttribute extends AttributeInfo {
     public String toString() {
         return "name=" + attribute_name +
                 ", value=" + value;
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(2);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.value.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.value);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
     }
 }
 class CodeAttribute extends AttributeInfo {
@@ -113,12 +163,53 @@ class CodeAttribute extends AttributeInfo {
             handler_pc = classStream.readShort();
             catch_type = classStream.readShort();
         }
+
+        void write(DataOutput output) throws IOException {
+            output.writeShort(start_pc);
+            output.writeShort(end_pc);
+            output.writeShort(handler_pc);
+            output.writeShort(catch_type);
+        }
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        DataOutput data = new DataOutputStream(outStream);
+
+        code.write(data);
+        int code_length = outStream.size();
+
+        data.writeShort(exception_table.length);
+        for (ExceptionTableEntry entry : exception_table) entry.write(data);
+
+        data.writeShort(attributes.length);
+        for (AttributeInfo attribute : attributes) attribute.write(data, constant_pool);
+
+        output.writeInt(8 + outStream.size());
+        output.writeShort(max_stack);
+        output.writeShort(max_locals);
+        output.writeInt(code_length);
+        output.write(outStream.toByteArray());
     }
 }
 
 //class StackMapTableAttribute extends AttributeInfo {
 //    // represents StackMapTable_attribute
-//
+// TODO impl
 //}
 class ExceptionsAttribute extends AttributeInfo {
     // represents Exceptions_attribute
@@ -131,6 +222,39 @@ class ExceptionsAttribute extends AttributeInfo {
         exception_index_table = new ConstantClassInfo[number_of_exceptions];
         for (int i = 0; i < number_of_exceptions; i++) {
             exception_index_table[i] = (ConstantClassInfo) klass.constantPool[classStream.readShort()];
+        }
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(exception_index_table.length*2 + 2);
+
+        for (ConstantClassInfo ex : exception_index_table) {
+            idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (ex.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(ex);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
         }
     }
 }
@@ -158,6 +282,72 @@ class InnerClassesAttribute extends AttributeInfo {
             inner_name = (ConstantUtf8) klass.constantPool[classStream.readShort()];
             inner_class_access_flags = new AccessFlags(classStream.readShort());
         }
+
+        public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+            int idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.inner_class_info.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.inner_class_info);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.outer_class_info.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.outer_class_info);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.inner_name.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.inner_name);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            output.writeShort(inner_class_access_flags.getFlags());
+        }
+
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(classes.length*8 + 2);
+
+        for (ClassTableEntry entry : classes) {
+            entry.write(output, constant_pool);
+        }
     }
 }
 class EnclosingMethodAttribute extends AttributeInfo {
@@ -171,6 +361,51 @@ class EnclosingMethodAttribute extends AttributeInfo {
         short method_index = classStream.readShort();
         if (method_index != 0) method = (ConstantNameAndType) klass.constantPool[method_index];
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(4);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.enclosing_class.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.enclosing_class);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.method.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.method);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
+
 }
 class SyntheticAttribute extends AttributeInfo {
     // represents Synthetic_attribute
@@ -187,6 +422,36 @@ class SignatureAttribute extends AttributeInfo {
         signature = (ConstantUtf8) klass.constantPool[classStream.readShort()];
     }
 
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(2);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.signature.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.signature);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
 }
 class SourceFileAttribute extends AttributeInfo {
     // represents SourceFile_attribute
@@ -195,6 +460,37 @@ class SourceFileAttribute extends AttributeInfo {
         super(parent);
 
         sourcefile = (ConstantUtf8) klass.constantPool[classStream.readShort()];
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(2);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.sourcefile.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.sourcefile);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
     }
 }
 class SourceDebugExtensionAttribute extends AttributeInfo {
@@ -206,6 +502,25 @@ class SourceDebugExtensionAttribute extends AttributeInfo {
 
         debug_extension = new byte[attribute_length];
         classStream.readFully(debug_extension);
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(debug_extension.length);
+        output.write(debug_extension);
     }
 }
 class LineNumberTableAttribute extends AttributeInfo {
@@ -229,8 +544,33 @@ class LineNumberTableAttribute extends AttributeInfo {
             start_pc = classStream.readShort();
             line_number = classStream.readShort();
         }
-    }
 
+        public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+            output.writeShort(start_pc);
+            output.writeShort(line_number);
+        }
+    }
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.write(line_number_table.length*4 + 2);
+
+        for (LineNumberTableEntry entry : line_number_table) {
+            entry.write(output, constant_pool);
+        }
+    }
 }
 class LocalVariableTableAttribute extends AttributeInfo {
     // represents LocalVariableTable_attribute
@@ -256,8 +596,63 @@ class LocalVariableTableAttribute extends AttributeInfo {
             descriptor = (ConstantUtf8) klass.constantPool[classStream.readShort()];
             index = classStream.readShort();
         }
+
+        public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+            output.writeShort(start_pc);
+            output.writeShort(length);
+
+            int idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.name.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.name);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.descriptor.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.descriptor);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            output.writeShort(index);
+        }
     }
 
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(local_variable_table.length*10 + 2);
+
+        output.writeShort(local_variable_table.length);
+        for (LocalVariableTableEntry entry : local_variable_table) {
+            entry.write(output, constant_pool);
+        }
+    }
 }
 class LocalVariableTypeTableAttribute extends AttributeInfo {
     // represents LocalVariableTypeTable_attribute
@@ -284,6 +679,62 @@ class LocalVariableTypeTableAttribute extends AttributeInfo {
             signature = (ConstantUtf8) klass.constantPool[classStream.readShort()];
             index = classStream.readShort();
         }
+
+        public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+            output.writeShort(start_pc);
+            output.writeShort(length);
+
+            int idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.name.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.name);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.signature.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.signature);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            output.writeShort(index);
+        }
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        output.writeInt(local_variable_type_table.length*10 + 2);
+
+        output.writeShort(local_variable_type_table.length);
+        for (LocalVariableTypeTableEntry entry : local_variable_type_table) {
+            entry.write(output, constant_pool);
+        }
     }
 }
 class DeprecatedAttribute extends AttributeInfo {
@@ -291,7 +742,7 @@ class DeprecatedAttribute extends AttributeInfo {
     DeprecatedAttribute(AttributeInfo parent, DataInput classStream, Klass klass) {
         super(parent);
     }
-    }
+}
 class RuntimeVisibleAnnotationsAttribute extends AttributeInfo {
     // represents RuntimeVisibleAnnotations_attribute
     // TODO implement
@@ -301,6 +752,24 @@ class RuntimeVisibleAnnotationsAttribute extends AttributeInfo {
 
         attribute = new byte[attribute_length];
         classStream.readFully(attribute);
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(attribute.length);
+        output.write(attribute);
     }
 }
 class RuntimeInvisibleAnnotationsAttribute extends AttributeInfo {
@@ -313,6 +782,24 @@ class RuntimeInvisibleAnnotationsAttribute extends AttributeInfo {
         attribute = new byte[attribute_length];
         classStream.readFully(attribute);
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(attribute.length);
+        output.write(attribute);
+    }
 }
 class RuntimeVisibleParameterAnnotationsAttribute extends AttributeInfo {
     // represents RuntimeVisibleParameterAnnotations_attribute
@@ -323,6 +810,24 @@ class RuntimeVisibleParameterAnnotationsAttribute extends AttributeInfo {
 
         attribute = new byte[attribute_length];
         classStream.readFully(attribute);
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(attribute.length);
+        output.write(attribute);
     }
 }
 class RuntimeInvisibleParameterAnnotationsAttribute extends AttributeInfo {
@@ -335,6 +840,24 @@ class RuntimeInvisibleParameterAnnotationsAttribute extends AttributeInfo {
         attribute = new byte[attribute_length];
         classStream.readFully(attribute);
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(attribute.length);
+        output.write(attribute);
+    }
 }
 class AnnotationDefaultAttribute extends AttributeInfo {
     // represents AnnotationDefault_attribute
@@ -344,6 +867,24 @@ class AnnotationDefaultAttribute extends AttributeInfo {
 
         default_value = new byte[attribute_length];
         classStream.readFully(default_value);
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+        output.writeInt(default_value.length);
+        output.write(default_value);
     }
 }
 class BootstrapMethodsAttribute extends AttributeInfo {
@@ -359,7 +900,8 @@ class BootstrapMethodsAttribute extends AttributeInfo {
             bootstrap_methods[i] = new BootstrapMethod(classStream, klass);
         }
     }
-        public class BootstrapMethod {
+
+    public class BootstrapMethod {
         ConstantMethodHandle bootstrap_method;
         short num_bootstrap_arguments;
         ConstantField[] bootstrap_arguments;
@@ -372,5 +914,63 @@ class BootstrapMethodsAttribute extends AttributeInfo {
                 bootstrap_arguments[i] = klass.constantPool[classStream.readShort()];
             }
         }
+
+        public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+            int idx = 0;
+            for (int i = 0; i < constant_pool.size(); i++) {
+                if (this.bootstrap_method.equals(constant_pool.get(i))) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx == 0) {
+                constant_pool.add(this.bootstrap_method);
+                idx = constant_pool.size();
+            }
+            output.writeShort(idx+1);
+
+            output.writeInt(bootstrap_arguments.length);
+
+            for (ConstantField argument : bootstrap_arguments) {
+                idx = 0;
+                for (int i = 0; i < constant_pool.size(); i++) {
+                    if (argument.equals(constant_pool.get(i))) {
+                        idx = i;
+                        break;
+                    }
+                }
+                if (idx == 0) {
+                    constant_pool.add(argument);
+                    idx = constant_pool.size();
+                }
+                output.writeShort(idx+1);
+            }
+        }
+    }
+
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.attribute_name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.attribute_name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        DataOutput data = new DataOutputStream(outStream);
+
+        for (BootstrapMethod method : bootstrap_methods) {
+            method.write(data, constant_pool);
+        }
+
+        output.writeInt(outStream.size() + 2);
+        output.writeShort(bootstrap_methods.length);
+        output.write(outStream.toByteArray());
     }
 }

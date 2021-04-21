@@ -1,4 +1,5 @@
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.List;
 
@@ -15,6 +16,12 @@ public class JavaBytecode {
             ret.append(instruction).append("\n");
         }
         return ret.toString();
+    }
+
+    public void write(DataOutput output) throws IOException {
+        for (BytecodeInstruction instruction : bytecode) {
+            instruction.write(output);
+        }
     }
 }
 
