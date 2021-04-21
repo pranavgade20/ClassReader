@@ -79,7 +79,19 @@ class ConstantClassInfo extends ConstantField {
     @Override
     public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
         super.write(output, constant_pool);
-        output.writeShort(name_index);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
     }
 }
 class ConstantFieldref extends ConstantField {
@@ -101,6 +113,37 @@ class ConstantFieldref extends ConstantField {
         class_index = -1; // mark invalid
         name_and_type_index = -1; // mark invalid
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.classs.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.classs);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.name_and_type.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.name_and_type);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
 }
 class ConstantMethodref extends ConstantField {
     //represents CONSTANT_Methodref_info
@@ -120,6 +163,37 @@ class ConstantMethodref extends ConstantField {
         name_and_type = (ConstantNameAndType) klass.constantPool[name_and_type_index];
         class_index = -1; // mark invalid
         name_and_type_index = -1; // mark invalid
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.classs.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.classs);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.name_and_type.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.name_and_type);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
     }
 }
 class ConstantInterfaceMethodref extends ConstantField {
@@ -141,6 +215,37 @@ class ConstantInterfaceMethodref extends ConstantField {
         class_index = -1; // mark invalid
         name_and_type_index = -1; // mark invalid
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.classs.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.classs);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.name_and_type.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.name_and_type);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
 }
 class ConstantString extends ConstantField {
     //represents CONSTANT_String_info
@@ -161,6 +266,24 @@ class ConstantString extends ConstantField {
     String getValue() {
         return string.value;
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.string.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.string);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
 }
 class ConstantInteger extends ConstantField {
     //represents CONSTANT_Integer_info
@@ -178,6 +301,13 @@ class ConstantInteger extends ConstantField {
     @Override
     public String toString() {
         return "value=" + value;
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        output.writeInt(value);
     }
 }
 class ConstantFloat extends ConstantField {
@@ -201,6 +331,13 @@ class ConstantFloat extends ConstantField {
     public String toString() {
         return "value=" + value;
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        output.writeFloat(value);
+    }
 }
 class ConstantLong extends ConstantField {
     //represents CONSTANT_Long_info
@@ -223,6 +360,13 @@ class ConstantLong extends ConstantField {
     public String toString() {
         return "value=" + value;
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        output.writeLong(value);
+    }
 }
 class ConstantDouble extends ConstantField {
     //represents CONSTANT_Double_info
@@ -244,6 +388,13 @@ class ConstantDouble extends ConstantField {
     @Override
     public String toString() {
         return "value=" + value;
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        output.writeDouble(value);
     }
 }
 class ConstantNameAndType extends ConstantField {
@@ -276,6 +427,38 @@ class ConstantNameAndType extends ConstantField {
     public String toString() {
         return getName() + " " + getDescriptor();
     }
+
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.name.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.name);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+
+        idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.descriptor.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.descriptor);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
 }
 class ConstantUtf8 extends ConstantField {
     //represents CONSTANT_Utf8_info
@@ -288,6 +471,7 @@ class ConstantUtf8 extends ConstantField {
         byte[] bytes = new byte[len];
         classStream.readFully(bytes);
         value = new String(bytes, StandardCharsets.UTF_8);
+        len = -1; // mark invalid
     }
 
     public String getValue() {
@@ -311,6 +495,16 @@ class ConstantUtf8 extends ConstantField {
     public int hashCode() {
         return Objects.hash(value);
     }
+
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        output.writeShort(bytes.length);
+        output.write(bytes);
+    }
 }
 class ConstantMethodHandle extends ConstantField {
     //represents CONSTANT_MethodHandle_info
@@ -328,6 +522,25 @@ class ConstantMethodHandle extends ConstantField {
     void resolve(Klass klass) {
         reference = klass.constantPool[reference_index];
         reference_index = -1; // mark invalid
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        output.write(reference_kind.value);
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.reference.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.reference);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
     }
 
     enum ReferenceKind {
@@ -362,6 +575,24 @@ class ConstantMethodType extends ConstantField {
         descriptor = (ConstantUtf8) klass.constantPool[descriptor_index];
         descriptor_index = -1; // mark invalid
     }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.descriptor.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.descriptor);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
+    }
 }
 class ConstantInvokeDynamic extends ConstantField {
     //represents CONSTANT_InvokeDynamic_info
@@ -379,6 +610,25 @@ class ConstantInvokeDynamic extends ConstantField {
     void resolve(Klass klass) {
         name_and_type = (ConstantNameAndType) klass.constantPool[name_and_type_index];
         name_and_type_index = -1; // mark invalid
+    }
+
+    @Override
+    public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {
+        super.write(output, constant_pool);
+
+        output.writeShort(bootstrap_method_attr_index); // TODO calculate this somehow
+        int idx = 0;
+        for (int i = 0; i < constant_pool.size(); i++) {
+            if (this.name_and_type.equals(constant_pool.get(i))) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx == 0) {
+            constant_pool.add(this.name_and_type);
+            idx = constant_pool.size();
+        }
+        output.writeShort(idx+1);
     }
 }
 
