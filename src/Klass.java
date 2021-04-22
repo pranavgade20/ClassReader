@@ -1,6 +1,9 @@
 import java.io.*;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class Klass {
     public short major_version, minor_version;
@@ -14,7 +17,11 @@ public class Klass {
     public AttributeInfo attributes[];
 
     Klass(Class c) throws AssertionError, IOException {
-        DataInput classStream = new DataInputStream(c.getResourceAsStream(c.getSimpleName()+".class"));
+        this(c.getResourceAsStream(c.getSimpleName() + ".class"));
+    }
+
+    Klass(InputStream c) throws AssertionError, IOException {
+        DataInput classStream = new DataInputStream(c);
         if (classStream.readInt() != 0xCAFEBABE)
             throw new AssertionError("class file magic number mismatch");
 
@@ -88,7 +95,7 @@ public class Klass {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream(); // for constant pool
         DataOutput data = new DataOutputStream(outStream);
 
-        List<ConstantField> constant_pool = Arrays.asList(constantPool);
+        LinkedList<ConstantField> constant_pool = Arrays.stream(constantPool).filter(Objects::nonNull).collect(Collectors.toCollection(LinkedList::new));
 
         data.writeShort(access_flags.getFlags());
 
@@ -130,7 +137,7 @@ public class Klass {
 
         data.writeShort(methods.length);
         for (MethodInfo method : methods) {
-            method.write(output, constant_pool);
+            method.write(data, constant_pool);
         }
 
         data.writeShort(attributes.length);
@@ -139,8 +146,9 @@ public class Klass {
         }
 
         output.writeShort(constant_pool.size() + 1);
+
         for (ConstantField constantField : constant_pool) {
-            if (constantField == null) continue;
+//            if (constantField == null) continue;
             constantField.write(output, constant_pool);
         }
 

@@ -40,7 +40,7 @@ public class ConstantField {
             case CONSTANT_InvokeDynamic:
                 return new ConstantInvokeDynamic(classStream, klass);
             default:
-                throw new AssertionError("Invalid constant type");
+                throw new ClassFormatError("Invalid constant type");
         }
     }
 
