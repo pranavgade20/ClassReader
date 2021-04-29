@@ -73,7 +73,7 @@ class ConstantClassInfo extends ConstantField {
 
     @Override
     public String toString() {
-        return getName();
+        return name.toString();
     }
 
     @Override

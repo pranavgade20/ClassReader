@@ -21,6 +21,7 @@ public class AttributeInfo {
     AttributeInfo(AttributeInfo from) {
         attribute_name = from.attribute_name;
         attribute_length = from.attribute_length;
+        info = from.info;
     }
 
     public static AttributeInfo getAttributeInfo(DataInput classStream, Klass klass) throws IOException {
@@ -39,10 +40,10 @@ public class AttributeInfo {
             case "LocalVariableTable": return new LocalVariableTableAttribute(info, classStream, klass);
             case "LocalVariableTypeTable": return new LocalVariableTypeTableAttribute(info, classStream, klass);
             case "Deprecated": return new DeprecatedAttribute(info, classStream, klass);
-            case"RuntimeVisibleAnnotations": return new RuntimeVisibleAnnotationsAttribute(info, classStream, klass);
-            case"RuntimeInvisibleAnnotations": return new RuntimeInvisibleAnnotationsAttribute(info, classStream, klass);
-            case"RuntimeVisibleParameterAnnotations": return new RuntimeVisibleParameterAnnotationsAttribute(info, classStream, klass);
-            case"RuntimeInvisibleParameterAnnotations": return new RuntimeInvisibleParameterAnnotationsAttribute(info , classStream, klass);
+            case "RuntimeVisibleAnnotations": return new RuntimeVisibleAnnotationsAttribute(info, classStream, klass);
+            case "RuntimeInvisibleAnnotations": return new RuntimeInvisibleAnnotationsAttribute(info, classStream, klass);
+            case "RuntimeVisibleParameterAnnotations": return new RuntimeVisibleParameterAnnotationsAttribute(info, classStream, klass);
+            case "RuntimeInvisibleParameterAnnotations": return new RuntimeInvisibleParameterAnnotationsAttribute(info , classStream, klass);
             case "AnnotationDefault": return new AnnotationDefaultAttribute(info, classStream, klass);
             case "BootstrapMethods": return new BootstrapMethodsAttribute(info, classStream, klass);
             case "StackMapTable": //TODO implement
@@ -565,7 +566,7 @@ class LineNumberTableAttribute extends AttributeInfo {
         }
         output.writeShort(idx+1);
 
-        output.write(line_number_table.length*4 + 2);
+        output.writeInt(line_number_table.length*4 + 2);
 
         for (LineNumberTableEntry entry : line_number_table) {
             entry.write(output, constant_pool);
