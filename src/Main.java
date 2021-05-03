@@ -1,3 +1,5 @@
+import io.github.pranavgade20.classexplorer.Klass;
+
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -11,6 +13,7 @@ public class Main {
         klass.write(new DataOutputStream(new FileOutputStream("MainTest.class")));
 
         Klass klass1 = new Klass(new FileInputStream("MainTest.class"));
+        System.out.println("Version: " + klass1.major_version + "." + klass1.minor_version);
     }
 }
 

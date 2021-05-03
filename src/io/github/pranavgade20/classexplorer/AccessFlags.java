@@ -1,3 +1,5 @@
+package io.github.pranavgade20.classexplorer;
+
 public class AccessFlags {
     private short flags;
 

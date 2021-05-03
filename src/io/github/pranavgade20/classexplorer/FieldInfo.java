@@ -1,15 +1,17 @@
+package io.github.pranavgade20.classexplorer;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.List;
 
-public class MethodInfo {
+public class FieldInfo {
     public AccessFlags access_flags;
     public ConstantUtf8 name, descriptor;
     public short attributes_count;
     public AttributeInfo[] attributes;
 
-    public MethodInfo(DataInput classStream, Klass klass) throws IOException {
+    public FieldInfo(DataInput classStream, Klass klass) throws IOException {
         access_flags = AccessFlags.fromFlags(classStream.readShort());
         name = (ConstantUtf8) klass.constantPool[classStream.readShort()];
         descriptor = (ConstantUtf8) klass.constantPool[classStream.readShort()];
@@ -23,7 +25,7 @@ public class MethodInfo {
 
     @Override
     public String toString() {
-        return name + " " + descriptor;
+        return descriptor + " " + name;
     }
 
     public void write(DataOutput output, List<ConstantField> constant_pool) throws IOException {

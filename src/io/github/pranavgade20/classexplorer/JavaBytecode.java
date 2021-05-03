@@ -1,4 +1,5 @@
-import java.io.DataInput;
+package io.github.pranavgade20.classexplorer;
+
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.List;

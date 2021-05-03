@@ -1,3 +1,5 @@
+package io.github.pranavgade20.classexplorer;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -15,11 +17,11 @@ public class Klass {
     public MethodInfo methods[];
     public AttributeInfo attributes[];
 
-    Klass(Class c) throws AssertionError, IOException {
+    public Klass(Class c) throws AssertionError, IOException {
         this(c.getResourceAsStream(c.getSimpleName() + ".class"));
     }
 
-    Klass(InputStream c) throws AssertionError, IOException {
+    public Klass(InputStream c) throws AssertionError, IOException {
         DataInput classStream = new DataInputStream(c);
         if (classStream.readInt() != 0xCAFEBABE)
             throw new AssertionError("class file magic number mismatch");

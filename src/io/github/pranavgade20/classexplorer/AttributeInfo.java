@@ -1,6 +1,6 @@
+package io.github.pranavgade20.classexplorer;
+
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -210,7 +210,7 @@ class CodeAttribute extends AttributeInfo {
     }
 }
 
-//class StackMapTableAttribute extends AttributeInfo {
+//class StackMapTableAttribute extends io.github.pranavgade20.classexplorer.AttributeInfo {
 //    // represents StackMapTable_attribute
 // TODO impl
 //}
