@@ -425,7 +425,7 @@ class ConstantNameAndType extends ConstantField {
 
     @Override
     public String toString() {
-        return getName() + " " + getDescriptor();
+        return name + "" + descriptor;
     }
 
 
