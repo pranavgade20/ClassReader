@@ -10,13 +10,13 @@ import java.util.List;
 
 public class CodeAttribute extends AttributeInfo {
     // represents Code_attribute
-    short max_stack, max_locals, exception_table_length, attributes_count;
+    public short max_stack, max_locals, exception_table_length, attributes_count;
     int code_length;
-    JavaBytecode code;
-    LinkedList<ExceptionTableEntry> exception_table;
-    LinkedList<AttributeInfo> attributes;
+    public JavaBytecode code;
+    public LinkedList<ExceptionTableEntry> exception_table;
+    public LinkedList<AttributeInfo> attributes;
 
-    CodeAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
+    public CodeAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
         max_stack = classStream.readShort();
         max_locals = classStream.readShort();
