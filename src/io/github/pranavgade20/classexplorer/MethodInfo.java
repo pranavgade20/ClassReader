@@ -1,5 +1,9 @@
 package io.github.pranavgade20.classexplorer;
 
+import io.github.pranavgade20.classexplorer.attributeinfo.AttributeInfo;
+import io.github.pranavgade20.classexplorer.constantfield.ConstantField;
+import io.github.pranavgade20.classexplorer.constantfield.ConstantUtf8;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;

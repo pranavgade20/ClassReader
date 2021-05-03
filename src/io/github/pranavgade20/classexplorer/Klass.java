@@ -1,5 +1,8 @@
 package io.github.pranavgade20.classexplorer;
 
+import io.github.pranavgade20.classexplorer.attributeinfo.AttributeInfo;
+import io.github.pranavgade20.classexplorer.constantfield.*;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.LinkedList;
