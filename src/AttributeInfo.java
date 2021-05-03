@@ -1,5 +1,7 @@
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class AttributeInfo {
@@ -133,8 +135,8 @@ class CodeAttribute extends AttributeInfo {
     short max_stack, max_locals, exception_table_length, attributes_count;
     int code_length;
     JavaBytecode code;
-    ExceptionTableEntry[] exception_table;
-    AttributeInfo[] attributes;
+    LinkedList<ExceptionTableEntry> exception_table;
+    LinkedList<AttributeInfo> attributes;
     CodeAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
         max_stack = classStream.readShort();
@@ -145,14 +147,14 @@ class CodeAttribute extends AttributeInfo {
         code = new JavaBytecode(bytecode);
 
         exception_table_length = classStream.readShort();
-        exception_table = new ExceptionTableEntry[exception_table_length];
+        exception_table = new LinkedList<>();
         for (int i = 0; i < exception_table_length; i++) {
-            exception_table[i] = new ExceptionTableEntry(classStream);
+            exception_table.add(i, new ExceptionTableEntry(classStream));
         }
         attributes_count = classStream.readShort();
-        attributes = new AttributeInfo[attributes_count];
+        attributes = new LinkedList<>();
         for (int i = 0; i < attributes_count; i++) {
-            attributes[i] = AttributeInfo.getAttributeInfo(classStream, klass);
+            attributes.add(i, AttributeInfo.getAttributeInfo(classStream, klass));
         }
     }
 
@@ -194,10 +196,10 @@ class CodeAttribute extends AttributeInfo {
         code.write(data);
         int code_length = outStream.size();
 
-        data.writeShort(exception_table.length);
+        data.writeShort(exception_table.size());
         for (ExceptionTableEntry entry : exception_table) entry.write(data);
 
-        data.writeShort(attributes.length);
+        data.writeShort(attributes.size());
         for (AttributeInfo attribute : attributes) attribute.write(data, constant_pool);
 
         output.writeInt(8 + outStream.size());
@@ -215,14 +217,14 @@ class CodeAttribute extends AttributeInfo {
 class ExceptionsAttribute extends AttributeInfo {
     // represents Exceptions_attribute
     short number_of_exceptions;
-    ConstantClassInfo[] exception_index_table;
+    LinkedList<ConstantClassInfo> exception_index_table;
     ExceptionsAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
 
         number_of_exceptions = classStream.readShort();
-        exception_index_table = new ConstantClassInfo[number_of_exceptions];
+        exception_index_table = new LinkedList<>();
         for (int i = 0; i < number_of_exceptions; i++) {
-            exception_index_table[i] = (ConstantClassInfo) klass.constantPool[classStream.readShort()];
+            exception_index_table.add(i, (ConstantClassInfo) klass.constantPool[classStream.readShort()]);
         }
     }
 
@@ -241,7 +243,7 @@ class ExceptionsAttribute extends AttributeInfo {
         }
         output.writeShort(idx+1);
 
-        output.writeInt(exception_index_table.length*2 + 2);
+        output.writeInt(exception_index_table.size()*2 + 2);
 
         for (ConstantClassInfo ex : exception_index_table) {
             idx = 0;
@@ -262,14 +264,14 @@ class ExceptionsAttribute extends AttributeInfo {
 class InnerClassesAttribute extends AttributeInfo {
     // represents InnerClasses_attribute
     short number_of_classes;
-    ClassTableEntry[] classes;
+    LinkedList<ClassTableEntry> classes;
     InnerClassesAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
 
         number_of_classes = classStream.readShort();
-        classes = new ClassTableEntry[number_of_classes];
+        classes = new LinkedList<>();
         for (int i = 0; i < number_of_classes; i++) {
-            classes[i] = new ClassTableEntry(classStream, klass);
+            classes.add(i,new ClassTableEntry(classStream, klass));
         }
     }
 
@@ -344,7 +346,7 @@ class InnerClassesAttribute extends AttributeInfo {
         }
         output.writeShort(idx+1);
 
-        output.writeInt(classes.length*8 + 2);
+        output.writeInt(classes.size()*8 + 2);
 
         for (ClassTableEntry entry : classes) {
             entry.write(output, constant_pool);
@@ -527,14 +529,14 @@ class SourceDebugExtensionAttribute extends AttributeInfo {
 class LineNumberTableAttribute extends AttributeInfo {
     // represents LineNumberTable_attribute
     short line_number_table_length;
-    LineNumberTableEntry[] line_number_table;
+    LinkedList<LineNumberTableEntry> line_number_table;
     LineNumberTableAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
 
         line_number_table_length = classStream.readShort();
-        line_number_table = new LineNumberTableEntry[line_number_table_length];
+        line_number_table = new LinkedList<>();
         for (int i = 0; i < line_number_table_length; i++) {
-            line_number_table[i] = new LineNumberTableEntry(classStream);
+            line_number_table.add(i, new LineNumberTableEntry(classStream));
         }
     }
 
@@ -566,9 +568,9 @@ class LineNumberTableAttribute extends AttributeInfo {
         }
         output.writeShort(idx+1);
 
-        output.writeInt(line_number_table.length*4 + 2);
+        output.writeInt(line_number_table.size()*4 + 2);
 
-        output.writeShort(line_number_table.length);
+        output.writeShort(line_number_table.size());
 
         for (LineNumberTableEntry entry : line_number_table) {
             entry.write(output, constant_pool);
@@ -578,15 +580,15 @@ class LineNumberTableAttribute extends AttributeInfo {
 class LocalVariableTableAttribute extends AttributeInfo {
     // represents LocalVariableTable_attribute
     short local_variable_table_length;
-    LocalVariableTableEntry[] local_variable_table;
+    LinkedList<LocalVariableTableEntry> local_variable_table;
     LocalVariableTableAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
 
         local_variable_table_length = classStream.readShort();
 
-        local_variable_table = new LocalVariableTableEntry[local_variable_table_length];
+        local_variable_table = new LinkedList<>();
         for (int i = 0; i < local_variable_table_length; i++) {
-            local_variable_table[i] = new LocalVariableTableEntry(classStream, klass);
+            local_variable_table.add(i, new LocalVariableTableEntry(classStream, klass));
         }
     }
         public class LocalVariableTableEntry {
@@ -649,9 +651,9 @@ class LocalVariableTableAttribute extends AttributeInfo {
         }
         output.writeShort(idx+1);
 
-        output.writeInt(local_variable_table.length*10 + 2);
+        output.writeInt(local_variable_table.size()*10 + 2);
 
-        output.writeShort(local_variable_table.length);
+        output.writeShort(local_variable_table.size());
         for (LocalVariableTableEntry entry : local_variable_table) {
             entry.write(output, constant_pool);
         }
@@ -660,15 +662,15 @@ class LocalVariableTableAttribute extends AttributeInfo {
 class LocalVariableTypeTableAttribute extends AttributeInfo {
     // represents LocalVariableTypeTable_attribute
     short local_variable_type_table_length;
-    LocalVariableTypeTableEntry[] local_variable_type_table;
+    LinkedList<LocalVariableTypeTableEntry> local_variable_type_table;
     LocalVariableTypeTableAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
 
         local_variable_type_table_length = classStream.readShort();
 
-        local_variable_type_table = new LocalVariableTypeTableEntry[local_variable_type_table_length];
+        local_variable_type_table = new LinkedList<>();
         for (int i = 0; i < local_variable_type_table_length; i++) {
-            local_variable_type_table[i] = new LocalVariableTypeTableEntry(classStream, klass);
+            local_variable_type_table.add(i, new LocalVariableTypeTableEntry(classStream, klass));
         }
     }
 
@@ -732,9 +734,9 @@ class LocalVariableTypeTableAttribute extends AttributeInfo {
         }
         output.writeShort(idx+1);
 
-        output.writeInt(local_variable_type_table.length*10 + 2);
+        output.writeInt(local_variable_type_table.size()*10 + 2);
 
-        output.writeShort(local_variable_type_table.length);
+        output.writeShort(local_variable_type_table.size());
         for (LocalVariableTypeTableEntry entry : local_variable_type_table) {
             entry.write(output, constant_pool);
         }
@@ -893,14 +895,14 @@ class AnnotationDefaultAttribute extends AttributeInfo {
 class BootstrapMethodsAttribute extends AttributeInfo {
     // represents BootstrapMethods_attribute
     short num_bootstrap_methods;
-    BootstrapMethod[] bootstrap_methods;
+    LinkedList<BootstrapMethod> bootstrap_methods;
     BootstrapMethodsAttribute(AttributeInfo parent, DataInput classStream, Klass klass) throws IOException {
         super(parent);
 
         num_bootstrap_methods = classStream.readShort();
-        bootstrap_methods = new BootstrapMethod[num_bootstrap_methods];
+        bootstrap_methods = new LinkedList<>();
         for (int i = 0; i < num_bootstrap_methods; i++) {
-            bootstrap_methods[i] = new BootstrapMethod(classStream, klass);
+            bootstrap_methods.add(i, new BootstrapMethod(classStream, klass));
         }
     }
 
@@ -973,7 +975,7 @@ class BootstrapMethodsAttribute extends AttributeInfo {
         }
 
         output.writeInt(outStream.size() + 2);
-        output.writeShort(bootstrap_methods.length);
+        output.writeShort(bootstrap_methods.size());
         outStream.writeTo((OutputStream) output);
     }
 }
