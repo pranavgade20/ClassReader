@@ -36,7 +36,7 @@ public class AttributeInfo {
             case "Signature": return new SignatureAttribute(info, classStream, klass);
             case "SourceFile": return new SourceFileAttribute(info, classStream, klass);
             case "SourceDebugExtension": return new SourceDebugExtensionAttribute(info, classStream, klass);
-            case "LineNumberTable": return new LineNumberTableAttribute(info, classStream, klass);
+//            case "LineNumberTable": return new LineNumberTableAttribute(info, classStream, klass);
             case "LocalVariableTable": return new LocalVariableTableAttribute(info, classStream, klass);
             case "LocalVariableTypeTable": return new LocalVariableTypeTableAttribute(info, classStream, klass);
             case "Deprecated": return new DeprecatedAttribute(info, classStream, klass);
