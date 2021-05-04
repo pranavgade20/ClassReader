@@ -149,7 +149,11 @@ public class BytecodeInstruction {
 
     @Override
     public String toString() {
-        return opcode + " " + Arrays.toString(params).replaceAll("[\\],\\[]", "");
+        StringBuilder ret = new StringBuilder(opcode.toString());
+        for (byte param : params) {
+            ret.append(" 0x").append(Integer.toHexString(param & 0xFF));
+        }
+        return ret.toString();
     }
 
     public void write(DataOutput output) throws IOException {
