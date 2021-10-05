@@ -1,7 +1,9 @@
 # ClassReader
 A wrapper around .class files, parses to and writes class files from objects.
 
-## Example
+## Examples
+See https://github.com/pranavgade20/Java-Disassembler for more details.
+
 ```java
 import io.github.pranavgade20.classexplorer.*;
 import java.io.*;
